@@ -1,5 +1,6 @@
 const express = require('express');
-const https = require('https');
+const request = require('request');
+var multer = require('multer');
 const fs = require('fs');
 var port = process.env.PORT || 3000;
 const app = express();
@@ -7,83 +8,78 @@ let apiURL = "https://commons.wikimedia.org/w/api.php"
 let shortenApiURL = "http://api.bitly.com/v3/shorten?callback=?"
 let CSRFToken;
 let jsonLogInfo = require('./bot.json');
+let loginToken;
 let returnedURL;
 let params;
+const upload = multer();
 
-app.get('/login',getLoginToken, function(req,res){
-    login(req.token);
+app.get('/login', function(req,res){
+    // send a fetch request to get the login token
+    params = "action=query&meta=tokens&format=json&type=login";
+    request.get({url: apiURL + "?" + params, credentials: 'include', jar: 'true'}, (err, result, body) => {
+        body = JSON.parse(body);
+        loginToken = body.query.tokens.logintoken;
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        login(res);
+    });
 });
+
+app.post('/upload', upload.single('file'), function(req,res){
+    console.log(req.body);
+    if(!CSRFToken){
+        res.status(404).send('CSRFTokenNotFound');
+    }
+
+    let formData = {
+        action: 'upload',
+        format: 'json',
+        filename: 'OpenYesterday' + Math.floor(Math.random() * Math.floor(214748364)), // gets the file name from the body
+        file: req.body.file,    // gets the file from the body
+        token: CSRFToken,
+        ignorewarnings: '1'
+    };
+    res.status(200).send();
+    request.post({url: apiURL, formData: formData, credentials: 'include', jar: 'true'}, (err,result,body)=>{
+        console.log(body);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.status(200).send(body);
+    });
+});
+
 app.use((err, req, res, next) => {
     res.status(err.status || 500);
     res.json(err.message);
 });
-
 app.listen(port);
 console.log("Server is listening to http://localhost:" + port);
 
-// send a fetch request to get the login token
-function getLoginToken(req, res, next){
-    params = "action=query&meta=tokens&format=json&type=login";
-    https.get(apiURL + "?" + params, result =>{
-        result.setEncoding('utf8');
-        let body = "";
-        result.headers['credentials'] = 'include';
-        result.on("data", data => {
-            body += data;
+function login(res){
+    if(loginToken) {
+        let formData = {
+            action: 'login',
+            lgname: jsonLogInfo.loginInfo.lgname,
+            lgpassword: jsonLogInfo.loginInfo.lgpassword,
+            lgtoken: loginToken,
+            format: 'json'
+        };
+        request.post({url: apiURL, formData: formData, credentials: 'include', jar: 'true'}, (err, result, body) => {
+            // body = success login
+            //body = JSON.parse(body);
+            getCSRFToken(res);
         });
-        result.on("end", () => {
-            body = JSON.parse(body);
-            req.token =  body.query.tokens.logintoken;
-            next();
-        });
-        result.on("error", err => {
-            console.log(err);
-        });
-    });
+    }
+    else res.status(404).send("No login token");
 }
-// permits to get a CSRF token needed for the uploading (automatically called after the login)
-function getCSRFToken(pictures){
-    let params = "action=query&meta=tokens&format=json";
-    fetch( CORSBypassURL + apiURL + "?" + params,{
-        credentials: 'include'
-    })
-    .then(response => response.json())
-    .then(data =>  CSRFToken = data.query.tokens.csrftoken)
-    .then(() => doApiCall(pictures));
+function getCSRFToken(res){
+    params = "action=query&meta=tokens&format=json";
+    request.get({url: apiURL + "?" + params, credentials: 'include', jar: 'true'}, (err,result,body) => {
+        body = JSON.parse(body);
+        CSRFToken = body.query.tokens.csrftoken;
+        res.status(200).send('login successful');
+        console.log('login successful');
+    });
 }
 
-// permits to login to wikimedia commons, login credentials are in a local file
-function login(loginToken){  
-    if(!loginToken) alert('No login token, please wait or check the internet connection');
-    let query = JSON.stringify({
-        action: 'login',
-        lgname: jsonLogInfo.loginInfo.lgname,
-        lgpassword: jsonLogInfo.loginInfo.lgpassword,
-        lgtoken: loginToken,
-        format: 'json'
-    });
-    const options = {
-        hostname: "commons.wikimedia.org",
-        path: '/w/api.php',
-        method: 'POST',
-        credentials: 'include'
-    };
-    var response;
-    const req = https.request(options, res =>{
-        res.on("data", data => {
-            response += data;
-        });
-        res.on("error", err =>{
-            console.log(err);
-        });
-        res.on("end", () =>{
-            console.log(response);
-        });
-    });
-    req.write(query);
-    req.end();
-    
-}
 
 // send the picutre to wikimedia commons
 function doApiCall(pictures){
@@ -92,35 +88,12 @@ function doApiCall(pictures){
         return;
     }
 
-    var formData = new FormData();
-    formData.append("action", "upload");
-    formData.append('format', 'json');
-    // TODO: replace the filename with the actual name of the building
-    formData.append("filename", 'OpenYesterday' + Math.floor(Math.random() * Math.floor(214748364)));
-    // TODO: get the file from the used library
-    formData.append("file", pictures.files[0]);
-    formData.append("token", CSRFToken);
-    formData.append('ignorewarnings', 1);
-
     fetch( CORSBypassURL + apiURL, {
         method: 'POST',
         credentials: 'include',
         body: formData
     }).then(response => response.json())
     .then(response => shortenURL(response.upload.imageinfo.url));
-}
-
-// loads json login credentials file
-function loadJson(callback){
-    var xhObj = new XMLHttpRequest();
-    xhObj.overrideMimeType('application/json');
-    xhObj.open('GET','../bot.json');
-    xhObj.onreadystatechange = function() {
-        if(xhObj.readyState == 4 && xhObj.status == 200){
-            callback(xhObj.responseText);
-        }
-    }
-    xhObj.send(null);
 }
 
 function shortenURL(longURL){
