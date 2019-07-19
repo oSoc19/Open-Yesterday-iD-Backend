@@ -87,6 +87,6 @@ function shortenURL(longURL, res){
         body = JSON.parse(body);
         res.statusMessage = body.data.url;
         res.setHeader('Access-Control-Allow-Origin', '*');
-        res.status(200).send('uploadComplete');
+        res.status(200).json({shortenURL: body.data.url});
     });
 }
