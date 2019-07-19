@@ -1,7 +1,6 @@
 const express = require('express');
 const request = require('request');
 var multer = require('multer');
-const fs = require('fs');
 var port = process.env.PORT || 3000;
 const app = express();
 let apiURL = "https://commons.wikimedia.org/w/api.php"
@@ -9,7 +8,6 @@ let shortenApiURL = "http://api.bitly.com/v3/shorten?callback=?"
 let CSRFToken;
 let jsonLogInfo = require('./bot.json');
 let loginToken;
-let returnedURL;
 let params;
 const upload = multer();
 
@@ -25,29 +23,32 @@ app.get('/login', function(req,res){
 });
 
 app.post('/upload', upload.single('file'), function(req,res){
-    console.log(req.body);
     if(!CSRFToken){
         res.status(404).send('CSRFTokenNotFound');
     }
-
     let formData = {
         action: 'upload',
         format: 'json',
-        filename: 'OpenYesterday' + Math.floor(Math.random() * Math.floor(214748364)), // gets the file name from the body
-        file: req.body.file,    // gets the file from the body
+        filename: req.body.name + ' ' + Math.floor(Math.random() * Math.floor(12)), // gets the file name from the body
+        file: {
+            value: req.file.buffer,
+            options:{
+                filename: req.file.originalname,
+                contentType: req.file.mimetype
+            }
+        },    // gets the file from the body
         token: CSRFToken,
         ignorewarnings: '1'
     };
-    res.status(200).send();
     request.post({url: apiURL, formData: formData, credentials: 'include', jar: 'true'}, (err,result,body)=>{
-        console.log(body);
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.status(200).send(body);
+        body = JSON.parse(body);
+        shortenURL(body.upload.imageinfo.url, res);
     });
 });
 
 app.use((err, req, res, next) => {
     res.status(err.status || 500);
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.json(err.message);
 });
 app.listen(port);
@@ -80,26 +81,12 @@ function getCSRFToken(res){
     });
 }
 
-
-// send the picutre to wikimedia commons
-function doApiCall(pictures){
-    if(CSRFToken == undefined){
-        alert("CSRFToken not defined, please wait");
-        return;
-    }
-
-    fetch( CORSBypassURL + apiURL, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData
-    }).then(response => response.json())
-    .then(response => shortenURL(response.upload.imageinfo.url));
-}
-
-function shortenURL(longURL){
-    let params = "format=json&apiKey=" + jsonLogInfo.wikimedia.api_key + "&login=" + jsonLogInfo.wikimedia.login + "&longUrl=" + longURL 
-    fetch(shortenApiURL + params)
-    .then(response => response.json())
-    .then(data => document.getElementById('preset-input-image').value += (',' + data.data.url))
-    .then( () => alert('upload successful'));
+function shortenURL(longURL, res){
+    params = "format=json&apiKey=" + jsonLogInfo.wikimedia.api_key + "&login=" + jsonLogInfo.wikimedia.login + "&longUrl=" + longURL;
+    request.get({url: shortenApiURL + params}, (err,result,body) => {
+        body = JSON.parse(body);
+        res.statusMessage = body.data.url;
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.status(200).send('uploadComplete');
+    });
 }
