@@ -18,7 +18,6 @@ app.get('/login', function(req,res){
     request.get({url: apiURL + "?" + params, credentials: 'include', jar: 'true'}, (err, result, body) => {
         body = JSON.parse(body);
         loginToken = body.query.tokens.logintoken;
-        res.setHeader('Access-Control-Allow-Origin', '*');      // Here we set a header, meaning that the response can be shared with the requesting code from the given origin.
         login(res);
     });
 });
@@ -43,10 +42,16 @@ app.post('/upload', upload.single('file'), function(req,res){
         token: CSRFToken,
         ignorewarnings: '1'
     };
+	// for log purposes
+	console.log(formData);
     request.post({url: apiURL, formData: formData, credentials: 'include', jar: 'true'}, (err,result,body)=>{
         body = JSON.parse(body);
-        shortenURL(body.upload.imageinfo.url, res);
-    });
+	// for log purposes
+	console.log(body);
+	if(body.upload) shortenURL(body.upload.imageinfo.url, res);
+	else if(body.error) res.send(406).send('error while uploading the picture to wkimedia');
+	else res.send(404).send('no picture sent');
+});
 });
 
 app.use((err, req, res, next) => {
@@ -56,7 +61,7 @@ app.use((err, req, res, next) => {
     res.json(err.message);
 });
 app.listen(port);
-console.log("Server is listening to http://localhost:" + port);     // For the moment the API is used in localhost but if you plan to host it somewhere and want to keep a track of it just replace `localhost` by your IP/DN
+console.log("Server is listening to http://www.richeza.me::" + port);     // For the moment the API is used by my server but if you plan to host it somewhere and want to keep a track of it just replace `localhost` by your IP/DN
 
 function login(res){
     // This function is used like a callback after the fetch of the login token.
@@ -82,9 +87,10 @@ function getCSRFToken(res){
     request.get({url: apiURL + "?" + params, credentials: 'include', jar: 'true'}, (err,result,body) => {
         body = JSON.parse(body);
         CSRFToken = body.query.tokens.csrftoken;
+	res.setHeader('Access-Control-Allow-Origin', '*');
         res.status(200).send('login successful');
         // You can add this log for testing purposes or if you want to keep track of login
-        //console.log('login successful');
+        console.log('login successful');
     });
 }
 

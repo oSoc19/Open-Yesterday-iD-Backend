@@ -11,6 +11,7 @@ Fetch a loginToken from wikimedia commons API, logs in with credentials (You can
 
 ## Upload
 Uploads the image, make the returned url pass through the bitly API to make it shorter and then returns it to your frontend
+Actually the upload feature is unavailable, due to our testing, we have unfortunately been banned from wikimedia. If you use this backend to use the image feature, please make your own wikimedia account and then make your bot.json file with the template given below.
 
 ## The bot.json credentials file
 In order to log in wikimedia and bitly you need credentials: for obvious security reasons, the original `bot.json` credentials file is not shared online. But you can create your own by registering an account at wikimedia and after create a bot password <a href="https://www.mediawiki.org/wiki/Special:BotPasswords">here</a>
