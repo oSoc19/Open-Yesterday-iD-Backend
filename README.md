@@ -1,4 +1,4 @@
-#How to use this application
+# How to use this application
 
 ## Start the server
 If it is your first use of this little 'backend', you first have to use the command `npm install` to install all the required packages to make this REST API work.
