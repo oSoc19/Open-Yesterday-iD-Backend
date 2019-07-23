@@ -24,6 +24,7 @@ app.get('/login', function(req,res){
 
 app.post('/upload', upload.single('file'), function(req,res){
     // This function is used when we want to upload a picture to wikimedia commons. You can check the documentation at: https://www.mediawiki.org/wiki/API:Upload 
+    res.setHeader('Access-Control-Allow-Origin', '*');
     if(!CSRFToken){
         res.status(404).send('CSRFTokenNotFound');
     }
@@ -100,7 +101,6 @@ function shortenURL(longURL, res){
     request.get({url: shortenApiURL + params}, (err,result,body) => {
         body = JSON.parse(body);
         res.statusMessage = body.data.url;
-        res.setHeader('Access-Control-Allow-Origin', '*');
         res.status(200).json({shortenURL: body.data.url});
     });
 }
