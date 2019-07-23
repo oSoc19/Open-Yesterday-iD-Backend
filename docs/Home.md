@@ -1,9 +1,11 @@
-# Start the server
+#How to use this application
+
+## Start the server
 If it is your first use of this little 'backend', you first have to use the command `npm install` to install all the required packages to make this REST API work.
 
 You can start the server by typing `node server.js`
 
-# Use
+## Use
 There are actually two callable function for this REST API:
 
 ## Login
