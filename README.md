@@ -1,6 +1,6 @@
 <p align="center"><h1>Open Heritage Map</h1></p>
 
-<p align="center"><img src="readmePics/crest.svg" width="96"><img src="https://github.com/oSoc19/website/blob/master/img/logo/logo-osoc-color.svg" width="128"></p>
+<p align="center"><img src="./readmePICS/crest.svg" width="96"><img src="https://github.com/oSoc19/website/blob/master/img/logo/logo-osoc-color.svg" width="128"></p>
 
 <p align="center">With Open Heritage Map, you can preserve memories about objects or locations that no longer exists. Add or edit information about these memories, like a story or a photograph, on the geographical map and cherish them forever as historical data!</p>
 
