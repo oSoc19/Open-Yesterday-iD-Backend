@@ -6,8 +6,11 @@
 
 # How to use this application
 
+## Prerequisites
+This application is running under node.js, you will then need it in order to make it run properly, install node <a href="https://nodejs.org/en/download/">here</a>. You can check that nodejs is installed by typing `node --version` in a terminal.
+
 ## Start the server
-If it is your first use of this little 'backend', you first have to use the command `npm install` to install all the required packages to make this REST API work.
+If it is your first use of this little 'backend', you first have to use the command `npm install` <b>in the folder</b> to install all the required packages to make this REST API work.
 
 You can start the server by typing `node server.js`
 
